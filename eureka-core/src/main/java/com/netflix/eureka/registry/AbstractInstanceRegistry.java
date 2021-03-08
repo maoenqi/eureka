@@ -121,6 +121,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
         this.renewsLastMin = new MeasuredRate(1000 * 60 * 1);
 
+        // 30s之后执行调度任务，每隔30s删除队列中超过3分钟的队列
         this.deltaRetentionTimer.schedule(getDeltaRetentionTask(),
                 serverConfig.getDeltaRetentionTimerIntervalInMs(),
                 serverConfig.getDeltaRetentionTimerIntervalInMs());
@@ -312,6 +313,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> leaseToCancel = null;
             if (gMap != null) {
+                // 从本地map移除
                 leaseToCancel = gMap.remove(id);
             }
 
@@ -342,6 +344,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     vip = instanceInfo.getVIPAddress();
                     svip = instanceInfo.getSecureVipAddress();
                 }
+                // 服务实例变更，过期注册表缓存
                 invalidateCache(appName, vip, svip);
                 logger.info("Cancelled instance {}/{} (replication={})", appName, id, isReplication);
                 return true;
@@ -597,6 +600,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public void evict(long additionalLeaseMs) {
         logger.debug("Running the evict task");
 
+        // 是否允许主动删除故障实例，取配置，跟自我保护机制相关
         if (!isLeaseExpirationEnabled()) {
             logger.debug("DS: lease expiration is currently disabled.");
             return;
@@ -611,6 +615,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             if (leaseMap != null) {
                 for (Entry<String, Lease<InstanceInfo>> leaseEntry : leaseMap.entrySet()) {
                     Lease<InstanceInfo> lease = leaseEntry.getValue();
+                    // 避免EvictionTask两次调度时间超过设置的60s
+                    // 遍历注册表中所有实例，调用方法，来判断当前服务实例租约是否过期、失效，如果失效则故障
+                    // 如果服务实例上次一次的心跳时间到现在为止超过了90*2=180s，才会认为服务实例过期故障了
                     if (lease.isExpired(additionalLeaseMs) && lease.getHolder() != null) {
                         expiredLeases.add(lease);
                     }
@@ -620,15 +627,21 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
         // To compensate for GC pauses or drifting local time, we need to use current registry size as a base for
         // triggering self-preservation. Without that we would wipe out full registry.
+        // 不可一次性摘除过多服务实例
+        // 假如20服务实例
         int registrySize = (int) getLocalRegistrySize();
+        // 20*0.85=17
         int registrySizeThreshold = (int) (registrySize * serverConfig.getRenewalPercentThreshold());
+        // 20-17=3最多摘除3个服务实例
         int evictionLimit = registrySize - registrySizeThreshold;
 
+        // 取最小值
         int toEvict = Math.min(expiredLeases.size(), evictionLimit);
         if (toEvict > 0) {
             logger.info("Evicting {} items (expired={}, evictionLimit={})", toEvict, expiredLeases.size(), evictionLimit);
 
             Random random = new Random(System.currentTimeMillis());
+            // 需要摘除的服务实例随机选择摘除
             for (int i = 0; i < toEvict; i++) {
                 // Pick a random item (Knuth shuffle algorithm)
                 int next = i + random.nextInt(expiredLeases.size() - i);
@@ -1237,6 +1250,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             evictionTaskRef.get().cancel();
         }
         evictionTaskRef.set(new EvictionTask());
+        // 每隔60s执行
         evictionTimer.schedule(evictionTaskRef.get(),
                 serverConfig.getEvictionIntervalTimerInMs(),
                 serverConfig.getEvictionIntervalTimerInMs());
@@ -1279,13 +1293,18 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
          * according to the configured cycle.
          */
         long getCompensationTimeMs() {
+            // 本来上一次是20:00:00,结果20:02:32才过来，可能jvm gc或本地linux系统时钟出问题
+            // 先获取当前时间
             long currNanos = getCurrentTimeNano();
+            // 上次EexecutionTask被执行时间，第一次0，将当前时间设置到AtomicLong
             long lastNanos = lastExecutionNanosRef.getAndSet(currNanos);
             if (lastNanos == 0l) {
                 return 0l;
             }
 
+            // 20:02:32-20:00:00=152s
             long elapsedMs = TimeUnit.NANOSECONDS.toMillis(currNanos - lastNanos);
+            // 152s-60s=92s
             long compensationTime = elapsedMs - serverConfig.getEvictionIntervalTimerInMs();
             return compensationTime <= 0l ? 0l : compensationTime;
         }

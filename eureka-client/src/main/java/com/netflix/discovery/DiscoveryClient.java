@@ -411,6 +411,7 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         // 期望在这里注册服务
+        // fetchRegistry抓取注册表
         if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
             // 抓取不到，从备用抓取
             fetchRegistryFromBackup();
@@ -882,14 +883,16 @@ public class DiscoveryClient implements EurekaClient {
             if (applicationInfoManager != null && clientConfig.shouldRegisterWithEureka()) {
                 // 将服务实例状态设置为DOWN
                 applicationInfoManager.setInstanceStatus(InstanceStatus.DOWN);
-                // 取消注册
+                // 核心，取消注册
                 unregister();
             }
 
+            // 关闭网络通信
             if (eurekaTransport != null) {
                 eurekaTransport.shutdown();
             }
 
+            // 关闭监听器
             heartbeatStalenessMonitor.shutdown();
             registryStalenessMonitor.shutdown();
 
@@ -947,6 +950,7 @@ public class DiscoveryClient implements EurekaClient {
                 logger.info("Registered Applications size is zero : {}",
                         (applications.getRegisteredApplications().size() == 0));
                 logger.info("Application version is -1: {}", (applications.getVersion() == -1));
+                // EurekaClient初始化时applications=null，全量抓取
                 getAndStoreFullRegistry();
             } else {
                 // 增量抓取注册表
