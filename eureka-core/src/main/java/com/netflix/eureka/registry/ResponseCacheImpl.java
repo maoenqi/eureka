@@ -129,6 +129,7 @@ public class ResponseCacheImpl implements ResponseCache {
         long responseCacheUpdateIntervalMs = serverConfig.getResponseCacheUpdateIntervalMs();
         this.readWriteCacheMap =
                 CacheBuilder.newBuilder().initialCapacity(1000)
+                        // 180s之后缓存失效
                         .expireAfterWrite(serverConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
                         .removalListener(new RemovalListener<Key, Value>() {
                             @Override
@@ -411,6 +412,7 @@ public class ResponseCacheImpl implements ResponseCache {
                     boolean isRemoteRegionRequested = key.hasRegions();
 
                     if (ALL_APPS.equals(key.getName())) {
+                        // 获取所有服务实例全量注册信息
                         if (isRemoteRegionRequested) {
                             tracer = serializeAllAppsWithRemoteRegionTimer.start();
                             payload = getPayLoad(key, registry.getApplicationsFromMultipleRegions(key.getRegions()));
@@ -420,6 +422,7 @@ public class ResponseCacheImpl implements ResponseCache {
                             payload = getPayLoad(key, registry.getApplications());
                         }
                     } else if (ALL_APPS_DELTA.equals(key.getName())) {
+                        // 获取增量注册信息
                         if (isRemoteRegionRequested) {
                             tracer = serializeDeltaAppsWithRemoteRegionTimer.start();
                             versionDeltaWithRegions.incrementAndGet();
@@ -433,6 +436,7 @@ public class ResponseCacheImpl implements ResponseCache {
                             payload = getPayLoad(key, registry.getApplicationDeltas());
                         }
                     } else {
+                        // 获取指定appName所有服务实例信息
                         tracer = serializeOneApptimer.start();
                         payload = getPayLoad(key, registry.getApplication(key.getName()));
                     }

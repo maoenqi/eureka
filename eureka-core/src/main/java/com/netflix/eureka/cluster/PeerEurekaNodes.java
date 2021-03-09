@@ -90,6 +90,7 @@ public class PeerEurekaNodes {
                 @Override
                 public void run() {
                     try {
+                        // 更新集群信息
                         updatePeerEurekaNodes(resolvePeerUrls());
                     } catch (Throwable e) {
                         logger.error("Cannot update the replica Nodes", e);
