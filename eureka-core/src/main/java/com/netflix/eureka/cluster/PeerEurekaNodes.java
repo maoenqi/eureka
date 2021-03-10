@@ -85,6 +85,8 @@ public class PeerEurekaNodes {
                 }
         );
         try {
+            // resolvePeerUrls解析其他eureka server的url地址
+            // 根据url地址更新
             updatePeerEurekaNodes(resolvePeerUrls());
             Runnable peersUpdateTask = new Runnable() {
                 @Override

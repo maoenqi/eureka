@@ -150,6 +150,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         this.numberOfReplicationsLastMin.start();
         this.peerEurekaNodes = peerEurekaNodes;
         initializedResponseCache();
+        // 初始化时启动定时更新调度，15分钟一次
         scheduleRenewalThresholdUpdateTask();
         initRemoteRegionRegistry();
 
@@ -207,9 +208,11 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         // Copy entire entry from neighboring DS node
         int count = 0;
 
+        // 可以重试5次
         for (int i = 0; ((i < serverConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
             if (i > 0) {
                 try {
+                    // 上一次拉取失败，30秒之后再拉
                     Thread.sleep(serverConfig.getRegistrySyncRetryWaitMs());
                 } catch (InterruptedException e) {
                     logger.warn("Interrupted during registry transfer..");
@@ -220,6 +223,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
                     try {
+                        // 实例是否可以注册
                         if (isRegisterable(instance)) {
                             register(instance, instance.getLeaseInfo().getDurationInSecs(), true);
                             count++;
@@ -479,10 +483,13 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
     @Override
     public boolean isLeaseExpirationEnabled() {
+        // 默认true，如果配置false，关闭自我保护机制
         if (!isSelfPreservationModeEnabled()) {
             // The self preservation mode is disabled, hence allowing the instances to expire.
             return true;
         }
+        // 期望一分钟要接收多少次心跳
+        // getNumOfRenewsInLastMin上一分钟所有服务实例一共发送过来多少次心跳
         return numberOfRenewsPerMinThreshold > 0 && getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold;
     }
 
@@ -521,6 +528,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      */
     private void updateRenewalThreshold() {
         try {
+            // 将自己作为eureka client，从其他的eureka server拉取注册表，合并到自己本地
             Applications apps = eurekaClient.getApplications();
             int count = 0;
             for (Application app : apps.getRegisteredApplications()) {
@@ -621,6 +629,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                                   InstanceStatus newStatus /* optional */, boolean isReplication) {
         Stopwatch tracer = action.getTimer().start();
         try {
+            // 注册时isReplication为false，同步给其他eureka server一定会将isReplication设置为true
             if (isReplication) {
                 numberOfReplicationsLastMin.increment();
             }
@@ -631,9 +640,11 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
             for (final PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
                 // If the url represents this host, do not replicate to yourself.
+                // 排除自己
                 if (peerEurekaNodes.isThisMyUrl(node.getServiceUrl())) {
                     continue;
                 }
+                // 同步所有信息到其他eureka server
                 replicateInstanceActionsToPeers(action, appName, id, info, newStatus, node);
             }
         } finally {

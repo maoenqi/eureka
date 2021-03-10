@@ -54,6 +54,7 @@ public class MeasuredRate {
                 public void run() {
                     try {
                         // Zero out the current bucket.
+                        // 1分钟到了之后，将上一分钟lastBucket保留次数，currentBucket清零
                         lastBucket.set(currentBucket.getAndSet(0));
                     } catch (Throwable e) {
                         logger.error("Cannot reset the Measured Rate", e);
