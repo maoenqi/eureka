@@ -219,6 +219,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                     break;
                 }
             }
+            // 启动时eureka server作为EurekaClient拉取了其他eureka server的注册表
+            // 这里直接取eureka client本地注册表
+            // 若没有其他eureka server则count=0
             Applications apps = eurekaClient.getApplications();
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
@@ -240,7 +243,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     @Override
     public void openForTraffic(ApplicationInfoManager applicationInfoManager, int count) {
         // Renewals happen every 30 seconds and for a minute it should be a factor of 2.
+        // 期望每分钟续约实例数，每30秒续约一次，那么期望实例应该是：服务实例数 * 2(这里不应该写死，如果改了心跳时间就不是2)
         this.expectedNumberOfRenewsPerMin = count * 2;
+        // 每分钟心跳阈值数，期望 * 0.85
         this.numberOfRenewsPerMinThreshold =
                 (int) (this.expectedNumberOfRenewsPerMin * serverConfig.getRenewalPercentThreshold());
         logger.info("Got " + count + " instances from neighboring DS node");

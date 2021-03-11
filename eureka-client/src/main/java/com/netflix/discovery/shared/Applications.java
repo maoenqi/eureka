@@ -72,9 +72,15 @@ public class Applications {
 
     private Long versionDelta = Long.valueOf(-1);
 
+    /**
+     * 包含的所有Application应用们，实际是个ConcurrentLinkedQueue
+     */
     @XStreamImplicit
     private AbstractQueue<Application> applications;
 
+    /**
+     * map缓存。key是应用名，value是应用实例本身。
+     */
     private Map<String, Application> appNameApplicationMap = new ConcurrentHashMap<String, Application>();
     private Map<String, AbstractQueue<InstanceInfo>> virtualHostNameAppMap = new ConcurrentHashMap<String, AbstractQueue<InstanceInfo>>();
     private Map<String, AbstractQueue<InstanceInfo>> secureVirtualHostNameAppMap = new ConcurrentHashMap<String, AbstractQueue<InstanceInfo>>();

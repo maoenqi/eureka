@@ -102,6 +102,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
     protected volatile int numberOfRenewsPerMinThreshold;
+    // 期望每分钟续约实例数
     protected volatile int expectedNumberOfRenewsPerMin;
 
     protected final EurekaServerConfig serverConfig;
@@ -600,6 +601,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     public void evict(long additionalLeaseMs) {
+        // 摘除心跳过去服务实例
         logger.debug("Running the evict task");
 
         // 是否允许主动删除故障实例，取配置，跟自我保护机制相关
