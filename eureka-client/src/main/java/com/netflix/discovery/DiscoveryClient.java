@@ -952,7 +952,7 @@ public class DiscoveryClient implements EurekaClient {
                 logger.info("Registered Applications size is zero : {}",
                         (applications.getRegisteredApplications().size() == 0));
                 logger.info("Application version is -1: {}", (applications.getVersion() == -1));
-                // EurekaClient初始化时applications=null，全量抓取
+                // 全量抓取注册表
                 getAndStoreFullRegistry();
             } else {
                 // 增量抓取注册表
