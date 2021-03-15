@@ -1249,6 +1249,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     protected void postInit() {
+        // 启动定时任务，1分钟执行一次，保存上一分钟接收心跳次数
         renewsLastMin.start();
         if (evictionTaskRef.get() != null) {
             evictionTaskRef.get().cancel();

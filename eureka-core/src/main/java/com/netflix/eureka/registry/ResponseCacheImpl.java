@@ -129,7 +129,7 @@ public class ResponseCacheImpl implements ResponseCache {
         long responseCacheUpdateIntervalMs = serverConfig.getResponseCacheUpdateIntervalMs();
         this.readWriteCacheMap =
                 CacheBuilder.newBuilder().initialCapacity(1000)
-                        // 写入一条数据后，等180s之后这个数据缓存失效
+                        // 写入一条数据后，180秒没有写入数据，这个数据缓存失效
                         .expireAfterWrite(serverConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
                         .removalListener(new RemovalListener<Key, Value>() {
                             @Override

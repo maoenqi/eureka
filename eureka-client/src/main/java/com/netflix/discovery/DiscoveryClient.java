@@ -1295,6 +1295,7 @@ public class DiscoveryClient implements EurekaClient {
 
             // InstanceInfo replicator
             // 服务实例定时复制调度任务，服务注册在InstanceInfoReplicator
+            // 复制服务实例信息到eureka server，eureka client注册
             instanceInfoReplicator = new InstanceInfoReplicator(
                     this,
                     instanceInfo,
@@ -1326,6 +1327,7 @@ public class DiscoveryClient implements EurekaClient {
                 applicationInfoManager.registerStatusChangeListener(statusChangeListener);
             }
 
+            // 延迟40秒开启任务
             instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
         } else {
             logger.info("Not registering with Eureka server per configuration");
@@ -1398,6 +1400,7 @@ public class DiscoveryClient implements EurekaClient {
         applicationInfoManager.refreshDataCenterInfoIfRequired();
         applicationInfoManager.refreshLeaseInfoIfRequired();
 
+        // 检查服务实例状态，放入ApplicationInfoManager
         InstanceStatus status;
         try {
             status = getHealthCheckHandler().getStatus(instanceInfo.getStatus());

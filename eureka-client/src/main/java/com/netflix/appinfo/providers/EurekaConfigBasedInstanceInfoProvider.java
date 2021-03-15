@@ -113,6 +113,7 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
             }
 
             // Add any user-specific metadata information
+            // 配置自定义的元数据
             for (Map.Entry<String, String> mapEntry : config.getMetadataMap().entrySet()) {
                 String key = mapEntry.getKey();
                 String value = mapEntry.getValue();

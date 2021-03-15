@@ -62,6 +62,7 @@ class InstanceInfoReplicator implements Runnable {
     public void start(int initialDelayMs) {
         if (started.compareAndSet(false, true)) {
             instanceInfo.setIsDirty();  // for initial register
+            // 延迟40秒才会去注册
             Future next = scheduler.schedule(this, initialDelayMs, TimeUnit.SECONDS);
             scheduledPeriodicRef.set(next);
         }

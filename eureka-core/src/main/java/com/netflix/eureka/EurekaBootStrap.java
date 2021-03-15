@@ -159,7 +159,7 @@ public class EurekaBootStrap implements ServletContextListener {
         logger.info(eurekaServerConfig.getJsonCodecName());
         ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
 
-        // 2.初始化ApplicationInfoManager
+        // 2.初始化ApplicationInfoManager，应用信息管理，包含作为eureka-client注册服务实例配置、实例信息
         ApplicationInfoManager applicationInfoManager = null;
 
         // 3.初始化eureka-server内部的一个eureka-client，用来跟其他eureka-server节点进行注册和通信
@@ -224,6 +224,7 @@ public class EurekaBootStrap implements ServletContextListener {
         // 7.处理一点善后的事情，从相邻的eureka节点拷贝注册信息
         int registryCount = registry.syncUp();
         // 打开注册表可以接收请求，registryCount从其他服务实例拉取过来的服务实例
+        // 自动摘除故障服务实例
         registry.openForTraffic(applicationInfoManager, registryCount);
 
         // Register all monitoring statistics.
