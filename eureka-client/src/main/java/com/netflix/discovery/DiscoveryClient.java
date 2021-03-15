@@ -1091,6 +1091,7 @@ public class DiscoveryClient implements EurekaClient {
             if (fetchRegistryUpdateLock.tryLock()) {
                 try {
                     updateDelta(delta);
+                    // 对合并后的注册表计算hash值
                     reconcileHashCode = getReconcileHashCode(applications);
                 } finally {
                     fetchRegistryUpdateLock.unlock();
@@ -1099,6 +1100,7 @@ public class DiscoveryClient implements EurekaClient {
                 logger.warn("Cannot acquire update lock, aborting getAndUpdateDelta");
             }
             // There is a diff in number of instances for some reason
+            // 合并后的hash值和抓取从eureka server获取的全量注册表hash值对比，不一致则全量抓取注册表
             if (!reconcileHashCode.equals(delta.getAppsHashCode()) || clientConfig.shouldLogDeltaDiff()) {
                 reconcileAndLogDifference(delta, reconcileHashCode);  // this makes a remoteCall
             }
