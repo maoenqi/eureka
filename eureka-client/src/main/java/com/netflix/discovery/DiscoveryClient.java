@@ -940,6 +940,7 @@ public class DiscoveryClient implements EurekaClient {
 
             if (clientConfig.shouldDisableDelta()
                     || (!Strings.isNullOrEmpty(clientConfig.getRegistryRefreshSingleVipAddress()))
+                    // 是否强制全量抓取
                     || forceFullRegistryFetch
                     || (applications == null)
                     || (applications.getRegisteredApplications().size() == 0)

@@ -819,6 +819,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
         }
+        // 设置Applications的hash值
         apps.setAppsHashCode(apps.getReconcileHashCode());
         return apps;
     }
@@ -1283,6 +1284,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         @Override
         public void run() {
             try {
+                // 获取补偿时间，时钟变化或GC等导致时间偏差
                 long compensationTimeMs = getCompensationTimeMs();
                 logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
                 evict(compensationTimeMs);
